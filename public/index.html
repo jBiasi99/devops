@@ -1,0 +1,364 @@
+<html><head><base href="https://serpentino-neon.com/"><title>Serpentino Neon: O Jogo da Cobrinha Futurista</title><style>
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #0c0c1d, #1a1b3a);
+    font-family: 'Orbitron', sans-serif;
+    color: #00ffff;
+    overflow: hidden;
+}
+#gameCanvas {
+    border: 4px solid #00ffff;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+#score {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 24px;
+    background-color: rgba(26, 27, 58, 0.7);
+    padding: 10px 20px;
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+#gameOver {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    font-size: 36px;
+    background-color: rgba(26, 27, 58, 0.9);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+}
+#restartButton {
+    margin-top: 20px;
+    padding: 10px 30px;
+    font-size: 18px;
+    background-color: #00ffff;
+    color: #0c0c1d;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+}
+#restartButton:hover {
+    background-color: #00cccc;
+    transform: scale(1.05);
+}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head><body>
+<canvas id="gameCanvas" width="600" height="600"></canvas>
+<div id="score">Pontuação: 0</div>
+<div id="gameOver">
+    Fim de Jogo!
+    <br>
+    <button id="restartButton">Reiniciar</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+const gameOverElement = document.getElementById('gameOver');
+const restartButton = document.getElementById('restartButton');
+
+const gridSize = 20;
+const tileCount = canvas.width / gridSize;
+
+let snake = [
+    {x: 15, y: 15},
+    {x: 14, y: 15},
+    {x: 13, y: 15}
+];
+let food = {x: 5, y: 5};
+let dx = 1;
+let dy = 0;
+let score = 0;
+let gameInterval;
+
+function drawGame() {
+    clearCanvas();
+    moveSnake();
+    drawSnake();
+    drawFood();
+    updateParticles();
+    drawParticles();
+    checkCollision();
+    updateScore();
+    
+    // Adicionar partículas na cauda da cobra
+    if (Math.random() < 0.3) {
+        const tail = snake[snake.length - 1];
+        particles.push(createParticle((tail.x + 0.5) * gridSize, (tail.y + 0.5) * gridSize));
+    }
+}
+
+function clearCanvas() {
+    ctx.fillStyle = '#0c0c1d';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Adicionar efeito de grade futurista
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= tileCount; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * gridSize, 0);
+        ctx.lineTo(i * gridSize, canvas.height);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(0, i * gridSize);
+        ctx.lineTo(canvas.width, i * gridSize);
+        ctx.stroke();
+    }
+}
+
+function moveSnake() {
+    const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+    snake.unshift(head);
+    
+    if (head.x === food.x && head.y === food.y) {
+        score++;
+        generateFood();
+    } else {
+        snake.pop();
+    }
+}
+
+function drawSnake() {
+    snake.forEach((segment, index) => {
+        const gradient = ctx.createLinearGradient(
+            segment.x * gridSize,
+            segment.y * gridSize,
+            (segment.x + 1) * gridSize,
+            (segment.y + 1) * gridSize
+        );
+        gradient.addColorStop(0, '#00ffff');
+        gradient.addColorStop(1, '#00cccc');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        if (index === 0) {
+            // Cabeça da cobra
+            ctx.arc(
+                (segment.x + 0.5) * gridSize,
+                (segment.y + 0.5) * gridSize,
+                gridSize / 2,
+                0,
+                Math.PI * 2
+            );
+        } else {
+            // Corpo da cobra
+            ctx.roundRect(
+                segment.x * gridSize,
+                segment.y * gridSize,
+                gridSize,
+                gridSize,
+                gridSize / 4
+            );
+        }
+        ctx.fill();
+        
+        // Efeito de brilho
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        // Olhos (apenas para a cabeça)
+        if (index === 0) {
+            ctx.fillStyle = '#0c0c1d';
+            ctx.beginPath();
+            ctx.arc(
+                (segment.x + 0.3) * gridSize,
+                (segment.y + 0.3) * gridSize,
+                gridSize / 10,
+                0,
+                Math.PI * 2
+            );
+            ctx.arc(
+                (segment.x + 0.7) * gridSize,
+                (segment.y + 0.3) * gridSize,
+                gridSize / 10,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+    });
+}
+
+function drawFood() {
+    const gradient = ctx.createRadialGradient(
+        (food.x + 0.5) * gridSize,
+        (food.y + 0.5) * gridSize,
+        gridSize / 10,
+        (food.x + 0.5) * gridSize,
+        (food.y + 0.5) * gridSize,
+        gridSize / 2
+    );
+    gradient.addColorStop(0, '#ff00ff');
+    gradient.addColorStop(1, '#cc00cc');
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(
+        (food.x + 0.5) * gridSize,
+        (food.y + 0.5) * gridSize,
+        gridSize / 2,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+    
+    // Efeito de brilho
+    ctx.shadowColor = '#ff00ff';
+    ctx.shadowBlur = 15;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+}
+
+function generateFood() {
+    food = {
+        x: Math.floor(Math.random() * tileCount),
+        y: Math.floor(Math.random() * tileCount)
+    };
+    
+    // Evitar gerar comida sobre a cobra
+    while (snake.some(segment => segment.x === food.x && segment.y === food.y)) {
+        food = {
+            x: Math.floor(Math.random() * tileCount),
+            y: Math.floor(Math.random() * tileCount)
+        };
+    }
+}
+
+function checkCollision() {
+    const head = snake[0];
+    
+    // Colisão com as paredes
+    if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+        gameOver();
+        return;
+    }
+    
+    // Colisão com o próprio corpo
+    for (let i = 1; i < snake.length; i++) {
+        if (head.x === snake[i].x && head.y === snake[i].y) {
+            gameOver();
+            return;
+        }
+    }
+}
+
+function updateScore() {
+    scoreElement.textContent = `Pontuação: ${score}`;
+}
+
+function gameOver() {
+    clearInterval(gameInterval);
+    gameOverElement.style.display = 'block';
+}
+
+function restartGame() {
+    snake = [
+        {x: 15, y: 15},
+        {x: 14, y: 15},
+        {x: 13, y: 15}
+    ];
+    food = {x: 5, y: 5};
+    dx = 1;
+    dy = 0;
+    score = 0;
+    particles.length = 0;
+    gameOverElement.style.display = 'none';
+    if (gameInterval) {
+        clearInterval(gameInterval);
+    }
+    gameInterval = setInterval(drawGame, 100);
+}
+
+document.addEventListener('keydown', changeDirection);
+restartButton.addEventListener('click', restartGame);
+
+function changeDirection(event) {
+    const LEFT_KEY = 37;
+    const RIGHT_KEY = 39;
+    const UP_KEY = 38;
+    const DOWN_KEY = 40;
+    
+    const keyPressed = event.keyCode;
+    const goingUp = dy === -1;
+    const goingDown = dy === 1;
+    const goingRight = dx === 1;
+    const goingLeft = dx === -1;
+    
+    if (keyPressed === LEFT_KEY && !goingRight) {
+        dx = -1;
+        dy = 0;
+    }
+    if (keyPressed === UP_KEY && !goingDown) {
+        dx = 0;
+        dy = -1;
+    }
+    if (keyPressed === RIGHT_KEY && !goingLeft) {
+        dx = 1;
+        dy = 0;
+    }
+    if (keyPressed === DOWN_KEY && !goingUp) {
+        dx = 0;
+        dy = 1;
+    }
+}
+
+// Sistema de partículas
+const particles = [];
+
+function createParticle(x, y) {
+    return {
+        x: x,
+        y: y,
+        size: Math.random() * 3 + 1,
+        speedX: Math.random() * 2 - 1,
+        speedY: Math.random() * 2 - 1,
+        color: `hsl(${Math.random() * 60 + 160}, 100%, 50%)`,
+        life: 30
+    };
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].x += particles[i].speedX;
+        particles[i].y += particles[i].speedY;
+        particles[i].life--;
+
+        if (particles[i].life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+}
+
+function drawParticles() {
+    particles.forEach(particle => {
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+// Iniciar o jogo
+restartGame();
+</script>
+</body></html>
