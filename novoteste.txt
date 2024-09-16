@@ -1,1 +1,2 @@
-"Este ‚ um arquivo de teste no branch dev" 
+"Este â€š um arquivo de teste no branch dev" 
+c
