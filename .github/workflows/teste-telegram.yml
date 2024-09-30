@@ -1,0 +1,15 @@
+name: Teste de Alerta no Telegram
+
+on:
+  workflow_dispatch:  # Isso permite que você dispare o workflow manualmente pelo GitHub
+
+jobs:
+  send_telegram_alert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Enviar alerta para o Telegram
+        run: |
+          curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="Alerta de teste enviado pelo GitHub Actions para o Telegram!"
