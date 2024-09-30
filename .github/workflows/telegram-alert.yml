@@ -17,4 +17,4 @@ jobs:
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="Novo commit foi feito no branch main: ${{ github.sha }}"
+          -d text="Novo commit no branch main: ${{ github.sha }} \nAutor: ${{ github.actor }} \nMensagem: ${{ github.event.head_commit.message }} \n[Ver commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})"
